@@ -4,8 +4,11 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import Icon from "@/components/ui/icon";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
+  const navigate = useNavigate();
+  
   const features = [
     {
       icon: "BarChart3",
@@ -87,7 +90,7 @@ const Index = () => {
             <a href="#faq" className="hover:text-primary transition-colors">FAQ</a>
             <a href="#contact" className="hover:text-primary transition-colors">Контакты</a>
           </div>
-          <Button className="bg-primary hover:bg-primary/90">Начать</Button>
+          <Button className="bg-primary hover:bg-primary/90" onClick={() => navigate('/dashboard')}>Войти</Button>
         </div>
       </nav>
 
@@ -100,11 +103,11 @@ const Index = () => {
             Современный трекер для полного контроля над доходами, расходами и финансовым будущим
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-primary hover:bg-primary/90 text-lg px-8 py-6">
+            <Button size="lg" className="bg-primary hover:bg-primary/90 text-lg px-8 py-6" onClick={() => navigate('/dashboard')}>
               Попробовать бесплатно
               <Icon name="ArrowRight" size={20} className="ml-2" />
             </Button>
-            <Button size="lg" variant="outline" className="text-lg px-8 py-6">
+            <Button size="lg" variant="outline" className="text-lg px-8 py-6" onClick={() => navigate('/dashboard')}>
               Смотреть демо
               <Icon name="Play" size={20} className="ml-2" />
             </Button>
