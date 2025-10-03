@@ -1,0 +1,42 @@
+{
+  "tests": [
+    {
+      "name": "Add transaction successfully",
+      "method": "POST",
+      "path": "/",
+      "headers": {
+        "X-User-Id": "1"
+      },
+      "body": {
+        "title": "Test Transaction",
+        "category": "Продукты",
+        "amount": 1500,
+        "type": "expense",
+        "icon": "ShoppingCart",
+        "date": "2024-10-03"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "id": "number",
+        "title": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Handle missing user ID",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "title": "Test",
+        "category": "Test",
+        "amount": 100,
+        "type": "expense"
+      },
+      "expectedStatus": 401,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

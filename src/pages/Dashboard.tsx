@@ -3,33 +3,60 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import Icon from "@/components/ui/icon";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [selectedPeriod, setSelectedPeriod] = useState("month");
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [userName, setUserName] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
-  const stats = [
-    { label: "Доход", value: "124 500", change: "+12.5%", trend: "up", icon: "TrendingUp", color: "text-green-600" },
-    { label: "Расход", value: "87 200", change: "-8.3%", trend: "down", icon: "TrendingDown", color: "text-red-600" },
-    { label: "Баланс", value: "37 300", change: "+18.2%", trend: "up", icon: "Wallet", color: "text-blue-600" },
-    { label: "Сбережения", value: "215 000", change: "+5.1%", trend: "up", icon: "PiggyBank", color: "text-purple-600" }
-  ];
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+      navigate('/login');
+      return;
+    }
+    
+    const user = JSON.parse(userStr);
+    setUserName(user.name || 'Пользователь');
+    
+    fetchTransactions(user.id);
+  }, [navigate]);
+
+  const fetchTransactions = async (userId: number) => {
+    try {
+      const response = await fetch('https://functions.poehali.dev/28c2f1c0-96a2-4708-b593-af2318653d27', {
+        method: 'GET',
+        headers: {
+          'X-User-Id': userId.toString()
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setTransactions(data);
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const totalIncome = transactions.filter(tx => tx.type === 'income').reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
+  const totalExpense = Math.abs(transactions.filter(tx => tx.type === 'expense').reduce((sum, tx) => sum + parseFloat(tx.amount), 0));
+  const balance = totalIncome - totalExpense;
+
+  const recentTransactions = transactions.slice(0, 5);
 
   const budgets = [
     { category: "Продукты", spent: 15400, limit: 20000, color: "bg-green-500" },
     { category: "Транспорт", spent: 8200, limit: 10000, color: "bg-blue-500" },
     { category: "Развлечения", spent: 12800, limit: 12000, color: "bg-red-500" },
     { category: "Здоровье", spent: 5600, limit: 15000, color: "bg-purple-500" }
-  ];
-
-  const transactions = [
-    { id: 1, title: "Магазин Пятёрочка", category: "Продукты", amount: -2340, date: "2 окт", icon: "ShoppingCart", type: "expense" },
-    { id: 2, title: "Зарплата", category: "Доход", amount: 85000, date: "1 окт", icon: "Briefcase", type: "income" },
-    { id: 3, title: "Яндекс.Такси", category: "Транспорт", amount: -450, date: "1 окт", icon: "Car", type: "expense" },
-    { id: 4, title: "Netflix", category: "Развлечения", amount: -799, date: "30 сен", icon: "Tv", type: "expense" },
-    { id: 5, title: "Фриланс проект", category: "Доход", amount: 25000, date: "28 сен", icon: "Laptop", type: "income" }
   ];
 
   const categories = [
@@ -54,7 +81,7 @@ const Dashboard = () => {
             </Button>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-semibold">
-                АП
+                {userName.slice(0, 2).toUpperCase()}
               </div>
             </div>
           </div>
@@ -116,24 +143,40 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {stats.map((stat, idx) => (
-                <Card key={idx} className="hover:shadow-lg transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">{stat.label}</CardTitle>
-                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center ${stat.color}`}>
-                      <Icon name={stat.icon} size={20} />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold mb-1">{stat.value} ₽</div>
-                    <p className={`text-sm flex items-center gap-1 ${stat.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
-                      <Icon name={stat.trend === 'up' ? "ArrowUp" : "ArrowDown"} size={16} />
-                      {stat.change} от прошлого месяца
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Доход</CardTitle>
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center text-green-600">
+                    <Icon name="TrendingUp" size={20} />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold mb-1">{totalIncome.toLocaleString()} ₽</div>
+                </CardContent>
+              </Card>
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Расход</CardTitle>
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center text-red-600">
+                    <Icon name="TrendingDown" size={20} />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold mb-1">{totalExpense.toLocaleString()} ₽</div>
+                </CardContent>
+              </Card>
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">Баланс</CardTitle>
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center text-blue-600">
+                    <Icon name="Wallet" size={20} />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold mb-1">{balance.toLocaleString()} ₽</div>
+                </CardContent>
+              </Card>
             </div>
 
             <div className="grid lg:grid-cols-2 gap-8 mb-8">
@@ -201,31 +244,42 @@ const Dashboard = () => {
                 <CardDescription>Операции за последние 7 дней</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {transactions.map((tx) => (
-                    <div key={tx.id} className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${tx.type === 'income' ? 'bg-green-100' : 'bg-red-100'}`}>
-                          <Icon name={tx.icon} size={20} className={tx.type === 'income' ? 'text-green-600' : 'text-red-600'} />
+                {isLoading ? (
+                  <div className="text-center py-8 text-muted-foreground">Загрузка...</div>
+                ) : recentTransactions.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>Транзакций пока нет</p>
+                    <Button className="mt-4" onClick={() => navigate('/transactions')}>Добавить первую транзакцию</Button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-4">
+                      {recentTransactions.map((tx) => (
+                        <div key={tx.id} className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50 transition-colors">
+                          <div className="flex items-center gap-4">
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${tx.type === 'income' ? 'bg-green-100' : 'bg-red-100'}`}>
+                              <Icon name={tx.icon || 'Circle'} size={20} className={tx.type === 'income' ? 'text-green-600' : 'text-red-600'} />
+                            </div>
+                            <div>
+                              <div className="font-semibold">{tx.title}</div>
+                              <div className="text-sm text-muted-foreground">{tx.category}</div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className={`font-bold text-lg ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                              {tx.type === 'income' ? '+' : ''}{parseFloat(tx.amount).toLocaleString()} ₽
+                            </div>
+                            <div className="text-sm text-muted-foreground">{new Date(tx.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-semibold">{tx.title}</div>
-                          <div className="text-sm text-muted-foreground">{tx.category}</div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className={`font-bold text-lg ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                          {tx.type === 'income' ? '+' : ''}{tx.amount.toLocaleString()} ₽
-                        </div>
-                        <div className="text-sm text-muted-foreground">{tx.date}</div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-                <Button variant="outline" className="w-full mt-6">
-                  Показать все транзакции
-                  <Icon name="ArrowRight" size={16} className="ml-2" />
-                </Button>
+                    <Button variant="outline" className="w-full mt-6" onClick={() => navigate('/transactions')}>
+                      Показать все транзакции
+                      <Icon name="ArrowRight" size={16} className="ml-2" />
+                    </Button>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>

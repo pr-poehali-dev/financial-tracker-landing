@@ -1,4 +1,6 @@
 {
+  "transactions-add": "https://functions.poehali.dev/3497cb43-f35d-4617-b376-ec833f47a728",
+  "transactions-get": "https://functions.poehali.dev/28c2f1c0-96a2-4708-b593-af2318653d27",
   "auth-register": "https://functions.poehali.dev/0bc3eda0-d9ac-4d55-9cb4-2ab55de2c216",
   "auth-login": "https://functions.poehali.dev/83411b6b-e48a-46f6-b444-a5116d01cc0f"
 }

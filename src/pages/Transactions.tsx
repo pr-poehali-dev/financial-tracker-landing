@@ -5,8 +5,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 import Icon from "@/components/ui/icon";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface Transaction {
@@ -21,10 +22,13 @@ interface Transaction {
 
 const Transactions = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [userId, setUserId] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   const [newTransaction, setNewTransaction] = useState({
     title: "",
@@ -34,16 +38,39 @@ const Transactions = () => {
     date: new Date().toISOString().split('T')[0]
   });
 
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    { id: 1, title: "Магазин Пятёрочка", category: "Продукты", amount: -2340, date: "2024-10-02", icon: "ShoppingCart", type: "expense" },
-    { id: 2, title: "Зарплата", category: "Доход", amount: 85000, date: "2024-10-01", icon: "Briefcase", type: "income" },
-    { id: 3, title: "Яндекс.Такси", category: "Транспорт", amount: -450, date: "2024-10-01", icon: "Car", type: "expense" },
-    { id: 4, title: "Netflix", category: "Развлечения", amount: -799, date: "2024-09-30", icon: "Tv", type: "expense" },
-    { id: 5, title: "Фриланс проект", category: "Доход", amount: 25000, date: "2024-09-28", icon: "Laptop", type: "income" },
-    { id: 6, title: "Аптека", category: "Здоровье", amount: -1200, date: "2024-09-27", icon: "Heart", type: "expense" },
-    { id: 7, title: "Кофейня Starbucks", category: "Развлечения", amount: -450, date: "2024-09-26", icon: "Coffee", type: "expense" },
-    { id: 8, title: "Перевод от клиента", category: "Доход", amount: 15000, date: "2024-09-25", icon: "ArrowDownToLine", type: "income" },
-  ]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+      navigate('/login');
+      return;
+    }
+    
+    const user = JSON.parse(userStr);
+    setUserId(user.id);
+    fetchTransactions(user.id);
+  }, [navigate]);
+
+  const fetchTransactions = async (uid: number) => {
+    try {
+      const response = await fetch('https://functions.poehali.dev/28c2f1c0-96a2-4708-b593-af2318653d27', {
+        method: 'GET',
+        headers: {
+          'X-User-Id': uid.toString()
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setTransactions(data);
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const categories = [
     { value: "Продукты", icon: "ShoppingCart" },
@@ -54,31 +81,10 @@ const Transactions = () => {
     { value: "Прочее", icon: "MoreHorizontal" }
   ];
 
-  const handleAddTransaction = (e: React.FormEvent) => {
+  const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const categoryData = categories.find(c => c.value === newTransaction.category) || categories[categories.length - 1];
-    
-    const transaction: Transaction = {
-      id: transactions.length + 1,
-      title: newTransaction.title,
-      category: newTransaction.category,
-      amount: newTransaction.type === "income" ? Math.abs(parseFloat(newTransaction.amount)) : -Math.abs(parseFloat(newTransaction.amount)),
-      date: newTransaction.date,
-      icon: categoryData.icon,
-      type: newTransaction.type
-    };
-
-    setTransactions([transaction, ...transactions]);
-    setIsDialogOpen(false);
-    setNewTransaction({
-      title: "",
-      amount: "",
-      category: "",
-      type: "expense",
-      date: new Date().toISOString().split('T')[0]
-    });
-  };
+    if (!userId) return;\n    \n    const categoryData = categories.find(c => c.value === newTransaction.category) || categories[categories.length - 1];\n    \n    try {\n      const response = await fetch('https://functions.poehali.dev/3497cb43-f35d-4617-b376-ec833f47a728', {\n        method: 'POST',\n        headers: {\n          'Content-Type': 'application/json',\n          'X-User-Id': userId.toString()\n        },\n        body: JSON.stringify({\n          title: newTransaction.title,\n          category: newTransaction.category,\n          amount: parseFloat(newTransaction.amount),\n          type: newTransaction.type,\n          icon: categoryData.icon,\n          date: newTransaction.date\n        })\n      });\n\n      if (!response.ok) {\n        toast({\n          title: \"\u041e\u0448\u0438\u0431\u043a\u0430\",\n          description: \"\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0434\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0442\u0440\u0430\u043d\u0437\u0430\u043a\u0446\u0438\u044e\",\n          variant: \"destructive\"\n        });\n        return;\n      }\n\n      const newTx = await response.json();\n      setTransactions([newTx, ...transactions]);\n      \n      toast({\n        title: \"\u0423\u0441\u043f\u0435\u0448\u043d\u043e!\",\n        description: \"\u0422\u0440\u0430\u043d\u0437\u0430\u043a\u0446\u0438\u044f \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u0430\"\n      });\n\n      setIsDialogOpen(false);\n      setNewTransaction({\n        title: \"\",\n        amount: \"\",\n        category: \"\",\n        type: \"expense\",\n        date: new Date().toISOString().split('T')[0]\n      });\n    } catch (error) {\n      toast({\n        title: \"\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u0435\u0442\u0438\",\n        description: \"\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0438\u0442\u044c\u0441\u044f \u043a \u0441\u0435\u0440\u0432\u0435\u0440\u0443\",\n      ... [truncated]
 
   const filteredTransactions = transactions.filter(tx => {
     const matchesSearch = tx.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -89,8 +95,8 @@ const Transactions = () => {
     return matchesSearch && matchesType && matchesCategory;
   });
 
-  const totalIncome = filteredTransactions.filter(tx => tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0);
-  const totalExpense = Math.abs(filteredTransactions.filter(tx => tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0));
+  const totalIncome = filteredTransactions.filter(tx => tx.type === "income").reduce((sum, tx) => sum + parseFloat(String(tx.amount)), 0);
+  const totalExpense = Math.abs(filteredTransactions.filter(tx => tx.type === "expense").reduce((sum, tx) => sum + parseFloat(String(tx.amount)), 0));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -327,7 +333,7 @@ const Transactions = () => {
                         </div>
                         <div className="text-right flex items-center gap-3">
                           <div className={`font-bold text-xl ${tx.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                            {tx.type === 'income' ? '+' : ''}{tx.amount.toLocaleString()} ₽
+                            {tx.type === 'income' ? '+' : ''}{parseFloat(String(tx.amount)).toLocaleString()} ₽
                           </div>
                           <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100">
                             <Icon name="MoreVertical" size={20} />
