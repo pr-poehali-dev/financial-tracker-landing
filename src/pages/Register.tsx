@@ -3,25 +3,72 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/hooks/use-toast";
 import Icon from "@/components/ui/icon";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Register = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreed, setAgreed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (password !== confirmPassword) {
-      alert("Пароли не совпадают");
+      toast({
+        title: "Ошибка",
+        description: "Пароли не совпадают",
+        variant: "destructive"
+      });
       return;
     }
-    navigate('/dashboard');
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('https://functions.poehali.dev/0bc3eda0-d9ac-4d55-9cb4-2ab55de2c216', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name, email, password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast({
+          title: "Ошибка регистрации",
+          description: data.error || "Не удалось создать аккаунт",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      localStorage.setItem('user', JSON.stringify(data));
+      
+      toast({
+        title: "Успешно!",
+        description: "Аккаунт создан. Добро пожаловать!"
+      });
+
+      setTimeout(() => navigate('/dashboard'), 500);
+    } catch (error) {
+      toast({
+        title: "Ошибка сети",
+        description: "Не удалось подключиться к серверу",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -106,9 +153,9 @@ const Register = () => {
               </label>
             </div>
 
-            <Button type="submit" className="w-full h-12 text-base bg-primary hover:bg-primary/90" disabled={!agreed}>
-              Зарегистрироваться
-              <Icon name="ArrowRight" size={20} className="ml-2" />
+            <Button type="submit" className="w-full h-12 text-base bg-primary hover:bg-primary/90" disabled={!agreed || isLoading}>
+              {isLoading ? "Регистрация..." : "Зарегистрироваться"}
+              {!isLoading && <Icon name="ArrowRight" size={20} className="ml-2" />}
             </Button>
           </form>
 

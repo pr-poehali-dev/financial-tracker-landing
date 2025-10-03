@@ -2,18 +2,59 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import Icon from "@/components/ui/icon";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate('/dashboard');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('https://functions.poehali.dev/83411b6b-e48a-46f6-b444-a5116d01cc0f', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        toast({
+          title: "Ошибка входа",
+          description: data.error || "Неверный email или пароль",
+          variant: "destructive"
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      localStorage.setItem('user', JSON.stringify(data));
+      
+      toast({
+        title: "Добро пожаловать!",
+        description: `Рады видеть вас, ${data.name}`
+      });
+
+      setTimeout(() => navigate('/dashboard'), 500);
+    } catch (error) {
+      toast({
+        title: "Ошибка сети",
+        description: "Не удалось подключиться к серверу",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -59,9 +100,9 @@ const Login = () => {
                 required
               />
             </div>
-            <Button type="submit" className="w-full h-12 text-base bg-primary hover:bg-primary/90">
-              Войти
-              <Icon name="ArrowRight" size={20} className="ml-2" />
+            <Button type="submit" className="w-full h-12 text-base bg-primary hover:bg-primary/90" disabled={isLoading}>
+              {isLoading ? "Вход..." : "Войти"}
+              {!isLoading && <Icon name="ArrowRight" size={20} className="ml-2" />}
             </Button>
           </form>
 
