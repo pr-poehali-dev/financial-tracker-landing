@@ -90,7 +90,7 @@ const Index = () => {
             <a href="#faq" className="hover:text-primary transition-colors">FAQ</a>
             <a href="#contact" className="hover:text-primary transition-colors">Контакты</a>
           </div>
-          <Button className="bg-primary hover:bg-primary/90" onClick={() => navigate('/dashboard')}>Войти</Button>
+          <Button className="bg-primary hover:bg-primary/90" onClick={() => navigate('/login')}>Войти</Button>
         </div>
       </nav>
 

@@ -68,7 +68,7 @@ const Dashboard = () => {
               <Icon name="LayoutDashboard" size={20} />
               Дашборд
             </Button>
-            <Button variant="ghost" className="w-full justify-start gap-3">
+            <Button variant="ghost" className="w-full justify-start gap-3" onClick={() => navigate('/transactions')}>
               <Icon name="ArrowLeftRight" size={20} />
               Транзакции
             </Button>
