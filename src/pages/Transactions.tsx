@@ -84,7 +84,60 @@ const Transactions = () => {
   const handleAddTransaction = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!userId) return;\n    \n    const categoryData = categories.find(c => c.value === newTransaction.category) || categories[categories.length - 1];\n    \n    try {\n      const response = await fetch('https://functions.poehali.dev/3497cb43-f35d-4617-b376-ec833f47a728', {\n        method: 'POST',\n        headers: {\n          'Content-Type': 'application/json',\n          'X-User-Id': userId.toString()\n        },\n        body: JSON.stringify({\n          title: newTransaction.title,\n          category: newTransaction.category,\n          amount: parseFloat(newTransaction.amount),\n          type: newTransaction.type,\n          icon: categoryData.icon,\n          date: newTransaction.date\n        })\n      });\n\n      if (!response.ok) {\n        toast({\n          title: \"\u041e\u0448\u0438\u0431\u043a\u0430\",\n          description: \"\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u0434\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0442\u0440\u0430\u043d\u0437\u0430\u043a\u0446\u0438\u044e\",\n          variant: \"destructive\"\n        });\n        return;\n      }\n\n      const newTx = await response.json();\n      setTransactions([newTx, ...transactions]);\n      \n      toast({\n        title: \"\u0423\u0441\u043f\u0435\u0448\u043d\u043e!\",\n        description: \"\u0422\u0440\u0430\u043d\u0437\u0430\u043a\u0446\u0438\u044f \u0434\u043e\u0431\u0430\u0432\u043b\u0435\u043d\u0430\"\n      });\n\n      setIsDialogOpen(false);\n      setNewTransaction({\n        title: \"\",\n        amount: \"\",\n        category: \"\",\n        type: \"expense\",\n        date: new Date().toISOString().split('T')[0]\n      });\n    } catch (error) {\n      toast({\n        title: \"\u041e\u0448\u0438\u0431\u043a\u0430 \u0441\u0435\u0442\u0438\",\n        description: \"\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u043e\u0434\u043a\u043b\u044e\u0447\u0438\u0442\u044c\u0441\u044f \u043a \u0441\u0435\u0440\u0432\u0435\u0440\u0443\",\n      ... [truncated]
+    if (!userId) return;
+    
+    const categoryData = categories.find(c => c.value === newTransaction.category) || categories[categories.length - 1];
+    
+    try {
+      const response = await fetch('https://functions.poehali.dev/3497cb43-f35d-4617-b376-ec833f47a728', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': userId.toString()
+        },
+        body: JSON.stringify({
+          title: newTransaction.title,
+          category: newTransaction.category,
+          amount: parseFloat(newTransaction.amount),
+          type: newTransaction.type,
+          icon: categoryData.icon,
+          date: newTransaction.date
+        })
+      });
+
+      if (!response.ok) {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось добавить транзакцию",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const newTx = await response.json();
+      setTransactions([newTx, ...transactions]);
+      
+      toast({
+        title: "Успешно!",
+        description: "Транзакция добавлена"
+      });
+
+      setIsDialogOpen(false);
+      setNewTransaction({
+        title: "",
+        amount: "",
+        category: "",
+        type: "expense",
+        date: new Date().toISOString().split('T')[0]
+      });
+    } catch (error) {
+      toast({
+        title: "Ошибка сети",
+        description: "Не удалось подключиться к серверу",
+        variant: "destructive"
+      });
+    }
+  };
 
   const filteredTransactions = transactions.filter(tx => {
     const matchesSearch = tx.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
